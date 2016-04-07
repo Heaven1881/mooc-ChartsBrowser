@@ -12,6 +12,7 @@ function ChartsBrowswerXBlock(runtime, element) {
     filterConfig.baseUrl = 'http://139.129.32.184:9009/view/index.html';
     filterConfig.enable = [
         'student-answer',
+        'student-exer-grade',
         'answer-heatmap',
     ];
     filterConfig.filter = {};
@@ -24,14 +25,16 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['v', '展现方式', 'pie'],
         ],
         parseUrl: function(data) {
-            var datapath = 'data.QuestionAnswerConsumer/{qno}.stat.json'.replaceInFormat({
-                qno: data.qno,
-            });
-            var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
+            var url = '{baseUrl}?v={v}'.replaceInFormat({
                 baseUrl: filterConfig.baseUrl,
-                datapath: datapath,
-                v: data.v
+                v: data.v[0]
             });
+            for (var i in data.qno) {
+                var qno = data.qno[i];
+                url += '&data=data.QuestionAnswerConsumer/{qno}.stat.json'.replaceInFormat({
+                    qno: qno,
+                });
+            }
             return url;
         },
     };
@@ -45,8 +48,34 @@ function ChartsBrowswerXBlock(runtime, element) {
             var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
                 baseUrl: filterConfig.baseUrl,
                 datapath: datapath,
-                v: data.v
+                v: data.v[0]
             });
+            return url;
+        }
+    }
+    filterConfig.filter['student-exer-grade'] = {
+        title: '学生练习成绩分布',
+        required: [
+            ['email', '学生的注册邮箱'],
+        ],
+        optional: [
+            ['compare', '是否和平均成绩比较', 'false'],
+            ['v', '展现方式', 'polar'],
+        ],
+        parseUrl: function(data) {
+            var url = '{baseUrl}?v={v}'.replaceInFormat({
+                baseUrl: filterConfig.baseUrl,
+                v: data.v[0]
+            });
+            if (data.compare[0] == 'true') {
+                url += '&data=data.SectionScoreConsumer/all.sections.stat.json';
+            }
+            for (var i in data.email) {
+                var email = data.email[i];
+                url += '&data=data.SectionScoreConsumer/{email}.sections.stat.json'.replaceInFormat({
+                    email: email,
+                });
+            }
             return url;
         }
     }
@@ -62,12 +91,10 @@ function ChartsBrowswerXBlock(runtime, element) {
                 if (argstr != null & argstr != '') {
                     var key = argstr.split('=')[0];
                     var value = argstr.split('=')[1];
-                    if (key == 'data') {
-                        if (args[key] == undefined) {args[key] = []}
-                        args[key].push(unescape(value));
-                    } else {
-                        args[key] = unescape(value);
+                    if (args[key] == undefined) {
+                        args[key] = [];
                     }
+                    args[key].push(unescape(value));
                 }
             }
         }
@@ -77,7 +104,7 @@ function ChartsBrowswerXBlock(runtime, element) {
     function loadChartFromUrlData(data) {
         if (data == null) return;
         if (data.type == null) return;
-        var filter = filterConfig.filter[data.type];
+        var filter = filterConfig.filter[data.type[0]];
         var url = filter.parseUrl(data);
         $(element).find('iframe').attr('src', url);
     }
@@ -157,7 +184,9 @@ function ChartsBrowswerXBlock(runtime, element) {
         $(element).find('.form-panel').find('input').each(function() {
             var name = $(this).attr('name');
             var value = $(this).val();
-            data[name] = value;
+            if (value == '')
+                return;
+            data[name] = value.split(',');
         });
         var filter = filterConfig.filter[enableType];
         var url = filter.parseUrl(data);
