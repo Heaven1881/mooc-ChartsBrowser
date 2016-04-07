@@ -25,7 +25,6 @@ class ChartsBrowswerXBlock(XBlock):
         html = self.resource_string("static/html/chartsbrowser.html")
         frag = Fragment(html)
         frag.add_css(self.resource_string("static/css/chartsbrowser.css"))
-        frag.add_javascript(self.resource_string("static/js/handlebars-v4.0.5.js"))
         frag.add_javascript(self.resource_string("static/js/src/chartsbrowser.js"))
         frag.initialize_js('ChartsBrowswerXBlock')
         return frag
