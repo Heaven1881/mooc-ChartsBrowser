@@ -8,6 +8,7 @@ String.prototype.replaceInFormat = function(repl) {
 
 function ChartsBrowswerXBlock(runtime, element) {
     // 这里是配置信息
+    var studentInfo = {};
     var filterConfig = {};
     filterConfig.baseUrl = 'http://139.129.32.184:9009/view/index.html';
     filterConfig.enable = [
@@ -15,14 +16,17 @@ function ChartsBrowswerXBlock(runtime, element) {
         'student-exer-grade',
         'answer-heatmap',
     ];
+    filterConfig.Visualization = {};
+    filterConfig.Visualization['CountStat'] = ['polar', 'areaspline', 'area', 'line', 'spline', 'column', 'bar']
     filterConfig.filter = {};
     filterConfig.filter['student-answer'] = {
         title: '选择题答案分布',
+        view: 'none', // 可浏览的类型 none不可浏览 self尽可浏览自己的数据 all可以浏览所有选项
         required: [
             ['qno', '题号'],
         ],
         optional: [
-            ['v', '展现方式', 'pie'],
+            ['v', '展现方式', ['pie'].concat(filterConfig.Visualization['CountStat'])],
         ],
         parseUrl: function(data) {
             var url = '{baseUrl}?v={v}'.replaceInFormat({
@@ -40,6 +44,7 @@ function ChartsBrowswerXBlock(runtime, element) {
     };
     filterConfig.filter['answer-heatmap'] = {
         title: '回答频率分布',
+        view: 'none',
         optional: [
             ['v', '展现方式', 'heatmap'],
         ],
@@ -55,24 +60,30 @@ function ChartsBrowswerXBlock(runtime, element) {
     }
     filterConfig.filter['student-exer-grade'] = {
         title: '学生练习成绩分布',
+        view: 'self',
         required: [
             ['email', '学生的注册邮箱'],
         ],
         optional: [
             ['compare', '是否和平均成绩比较', 'false'],
-            ['v', '展现方式', 'polar'],
+            ['v', '展现方式', filterConfig.Visualization['CountStat']],
         ],
         parseUrl: function(data) {
+            if (!studentInfo.is_staff) {
+                data.email = [studentInfo.email];
+                data.compare = ['true'];
+                data.v = ['polar'];
+            }
             var url = '{baseUrl}?v={v}'.replaceInFormat({
                 baseUrl: filterConfig.baseUrl,
                 v: data.v[0]
             });
             if (data.compare[0] == 'true') {
-                url += '&data=data.SectionScoreConsumer/all.sections.stat.json';
+                url += '&data=data.SectionScoreConsumer/all.json';
             }
             for (var i in data.email) {
                 var email = data.email[i];
-                url += '&data=data.SectionScoreConsumer/{email}.sections.stat.json'.replaceInFormat({
+                url += '&data=data.SectionScoreConsumer/{email}.json'.replaceInFormat({
                     email: email,
                 });
             }
@@ -101,6 +112,21 @@ function ChartsBrowswerXBlock(runtime, element) {
         return args;
     }
 
+    function getStudentInfo() {
+        var studentInfo = {};
+        $.ajax({
+            type: 'POST',
+            url: runtime.handlerUrl(element, 'getStudentInfo'),
+            data: JSON.stringify({'data': 'getStudentInfo'}),
+            dataType: 'json',
+            async: false,
+            success: function(data) {
+                studentInfo = data;
+            }
+        });
+        return studentInfo;
+    }
+
     function loadChartFromUrlData(data) {
         if (data == null) return;
         if (data.type == null) return;
@@ -110,15 +136,21 @@ function ChartsBrowswerXBlock(runtime, element) {
     }
 
     $(function($) {
+        var student = getStudentInfo();
+        studentInfo = student;
         for (var i in filterConfig.enable) {
             var filter = filterConfig.filter[filterConfig.enable[i]];
-            // 渲染类型选择框
-            $(element).find('.class-select').append(
-                '<option value="{value}">{name}</option>'.replaceInFormat({
-                    value: filterConfig.enable[i],
-                    name: filter.title,
-                })
-            );
+            if (student.is_staff || filter.view == 'self' || filter == 'all') {
+                // 渲染类型选择框
+                $(element).find('.class-select').append(
+                    '<option value="{value}">{name}</option>'.replaceInFormat({
+                        value: filterConfig.enable[i],
+                        name: filter.title,
+                    })
+                );
+            } else {
+                console.info('skip ', filterConfig.enable[i]);
+            }
         }
 
         var data = getChartsInfo();
@@ -137,37 +169,52 @@ function ChartsBrowswerXBlock(runtime, element) {
             return;
         }
 
-        // 渲染必填数据
-        for (var j in filter.required) {
-            inputItem = filter.required[j];
-            $(element).find('.form-panel').append(
-                '<div class="required-input-group">\
-                    <label>\
-                        <span class="label">{label}:</span>\
-                        <input name="{name}" type="text" class="input"/>\
-                    </label>\
-                </div>'.replaceInFormat({
-                    label: inputItem[1],
-                    name: inputItem[0],
-                })
-            );
-        }
+        if (studentInfo.is_staff || filter.view == 'all') {
+            // 渲染必填数据
+            for (var j in filter.required) {
+                inputItem = filter.required[j];
+                $(element).find('.form-panel').append(
+                    '<div class="required-input-group">\
+                        <label>\
+                            <span class="label">{label}:</span>\
+                            <input name="{name}" type="text" class="input"/>\
+                        </label>\
+                    </div>'.replaceInFormat({
+                        label: inputItem[1],
+                        name: inputItem[0],
+                    })
+                );
+            }
 
-        // 渲染选填数据
-        for (var j in filter.optional) {
-            inputItem = filter.optional[j];
-            $(element).find('.form-panel').append(
-                '<div class="optional-input-group">\
-                    <label>\
-                        <span class="label">{label}:</span>\
-                        <input name="{name}" value="{value}" type="text" class="input"/>\
-                    </label>\
-                </div>'.replaceInFormat({
-                    label: inputItem[1],
-                    name: inputItem[0],
-                    value: inputItem[2],
-                })
-            );
+            // 渲染选填数据
+            for (var j in filter.optional) {
+                inputItem = filter.optional[j];
+                if (inputItem[2] instanceof Array) {
+                    var htmlStr = '';
+                    htmlStr += '<div class="optional-input-group"><label><span class="label">{label}</span>'.replaceInFormat({label: inputItem[1]});
+                    htmlStr += '<select name="{name}" class="input">'.replaceInFormat({name: inputItem[0]});
+                    var opts = inputItem[2];
+                    for (var i in opts) {
+                        htmlStr += '<option value="{value}">{value}</option>'.replaceInFormat({value: opts[i]});
+                    }
+                    htmlStr += '</select>'
+                    htmlStr += '</label></div>'
+                    $(element).find('.form-panel').append(htmlStr);
+                } else {
+                    $(element).find('.form-panel').append(
+                        '<div class="optional-input-group">\
+                            <label>\
+                                <span class="label">{label}:</span>\
+                                <input name="{name}" value="{value}" type="text" class="input"/>\
+                            </label>\
+                        </div>'.replaceInFormat({
+                            label: inputItem[1],
+                            name: inputItem[0],
+                            value: inputItem[2],
+                        })
+                    );
+                }
+            }
         }
 
         // 渲染载入按钮
@@ -181,7 +228,7 @@ function ChartsBrowswerXBlock(runtime, element) {
     $(element).on('click', '.load-charts', function(e) {
         var enableType = $(element).find('.class-select').val();
         var data = {};
-        $(element).find('.form-panel').find('input').each(function() {
+        $(element).find('.form-panel').find('.input').each(function() {
             var name = $(this).attr('name');
             var value = $(this).val();
             if (value == '')

@@ -29,6 +29,30 @@ class ChartsBrowswerXBlock(XBlock):
         frag.initialize_js('ChartsBrowswerXBlock')
         return frag
 
+    @XBlock.json_handler
+    def getStudentInfo(self, data, suffix=''):
+        if not hasattr(self.runtime, 'anonymous_student_id'):
+            # 测试环境
+            return {
+                'username': 'unkown',
+                'email': 'luofuwen5935@sina.cn',
+                'is_staff': True,
+            }
+        elif not hasattr(self.runtime, 'get_real_user'):
+            # Studio 环境
+            return {
+                'username': 'unkown',
+                'email': 'cannot get email',
+                'is_staff': True,
+            }
+        else:
+            student = self.runtime.get_real_user(self.runtime.anonymous_student_id)
+            return {
+                'username': student.username,
+                'email': student.email,
+                'is_staff': student.is_staff,
+            }
+
     @staticmethod
     def workbench_scenarios():
         """A canned scenario for display in the workbench."""
