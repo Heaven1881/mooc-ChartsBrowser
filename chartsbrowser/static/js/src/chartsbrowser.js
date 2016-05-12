@@ -15,9 +15,10 @@ function ChartsBrowswerXBlock(runtime, element) {
         'student-answer',
         'student-exer-grade',
         'answer-heatmap',
+        'piazza-action'
     ];
     filterConfig.Visualization = {};
-    filterConfig.Visualization['CountStat'] = ['polar', 'areaspline', 'area', 'line', 'spline', 'column', 'bar']
+    filterConfig.Visualization['CountStat'] = ['areaspline', 'area', 'line', 'spline', 'column', 'bar']
     filterConfig.filter = {};
     filterConfig.filter['student-answer'] = {
         title: '选择题答案分布',
@@ -57,7 +58,7 @@ function ChartsBrowswerXBlock(runtime, element) {
             });
             return url;
         }
-    }
+    };
     filterConfig.filter['student-exer-grade'] = {
         title: '学生练习成绩分布',
         view: 'self',
@@ -65,7 +66,7 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['email', '学生的注册邮箱'],
         ],
         optional: [
-            ['compare', '是否和平均成绩比较', 'false'],
+            ['compare', '是否和平均成绩比较', ['false', 'true']],
             ['v', '展现方式', filterConfig.Visualization['CountStat']],
         ],
         parseUrl: function(data) {
@@ -89,7 +90,27 @@ function ChartsBrowswerXBlock(runtime, element) {
             }
             return url;
         }
-    }
+    };
+    filterConfig.filter['piazza-action'] = {
+        title: 'piazza平台情况',
+        view: 'none',
+        required: [],
+        optional: [
+            ['type', '类别', ['asks', 'days', 'views', 'answers', 'posts']],
+            ['v', '展现方式', ['column'].concat(filterConfig.Visualization['CountStat'])],
+        ],
+        parseUrl: function(data) {
+            var datapath = 'data.PiazzaActionCsm/{type}.json'.replaceInFormat({
+                type: data.type[0],
+            });
+            var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
+                baseUrl: filterConfig.baseUrl,
+                datapath: datapath,
+                v: data.v[0]
+            });
+            return url;
+        }
+    };
 
     function getChartsInfo() {
         var url = window.location.search;
