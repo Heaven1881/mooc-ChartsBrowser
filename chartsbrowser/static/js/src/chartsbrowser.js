@@ -11,11 +11,15 @@ function ChartsBrowswerXBlock(runtime, element) {
     var studentInfo = {};
     var filterConfig = {};
     filterConfig.baseUrl = 'http://139.129.32.184:9009/view/index.html';
+    filterConfig.stuReportUrl = 'http://139.129.32.184:9009/view/report-template/student-status-report.html'
+    filterConfig.claReportUrl = 'http://139.129.32.184:9009/view/report-template/class-status-report.html'
     filterConfig.enable = [
         'student-answer',
         'student-exer-grade',
         'answer-heatmap',
-        'piazza-action'
+        'piazza-action',
+        'student-report',
+        'class-report'
     ];
     filterConfig.Visualization = {};
     filterConfig.Visualization['CountStat'] = ['areaspline', 'area', 'line', 'spline', 'column', 'bar']
@@ -27,21 +31,21 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['qno', '题号'],
         ],
         optional: [
-            ['v', '展现方式', ['pie'].concat(filterConfig.Visualization['CountStat'])],
-        ],
-        parseUrl: function(data) {
-            var url = '{baseUrl}?v={v}'.replaceInFormat({
-                baseUrl: filterConfig.baseUrl,
-                v: data.v[0]
-            });
-            for (var i in data.qno) {
-                var qno = data.qno[i];
-                url += '&data=data.QuestionAnswerConsumer/{qno}.stat.json'.replaceInFormat({
-                    qno: qno,
-                });
-            }
-            return url;
-        },
+                ['v', '展现方式', ['pie'].concat(filterConfig.Visualization['CountStat'])],
+            ],
+            parseUrl: function(data) {
+                    var url = '{baseUrl}?v={v}'.replaceInFormat({
+                        baseUrl: filterConfig.baseUrl,
+                        v: data.v[0]
+                    });
+                    for (var i in data.qno) {
+                        var qno = data.qno[i];
+                        url += '&data=data.QuestionAnswerConsumer/{qno}.stat.json'.replaceInFormat({
+                            qno: qno,
+                        });
+                    }
+                    return url;
+                },
     };
     filterConfig.filter['answer-heatmap'] = {
         title: '回答频率分布',
@@ -50,14 +54,14 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['v', '展现方式', 'heatmap'],
         ],
         parseUrl: function(data) {
-            var datapath = 'data.StudentAnswerHeatmapConsumer/answerheatmap.stat.json'
-            var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
-                baseUrl: filterConfig.baseUrl,
-                datapath: datapath,
-                v: data.v[0]
-            });
-            return url;
-        }
+                var datapath = 'data.StudentAnswerHeatmapConsumer/answerheatmap.stat.json'
+                var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
+                    baseUrl: filterConfig.baseUrl,
+                    datapath: datapath,
+                    v: data.v[0]
+                });
+                return url;
+            }
     };
     filterConfig.filter['student-exer-grade'] = {
         title: '学生练习成绩分布',
@@ -66,30 +70,58 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['email', '学生的注册邮箱'],
         ],
         optional: [
-            ['compare', '是否和平均成绩比较', ['false', 'true']],
-            ['v', '展现方式', filterConfig.Visualization['CountStat']],
-        ],
+                ['compare', '是否和平均成绩比较', ['false', 'true']],
+                ['v', '展现方式', filterConfig.Visualization['CountStat']],
+            ],
+            parseUrl: function(data) {
+                    if (!studentInfo.is_staff) {
+                        data.email = [studentInfo.email];
+                        data.compare = ['true'];
+                        data.v = ['polar'];
+                    }
+                    var url = '{baseUrl}?v={v}'.replaceInFormat({
+                        baseUrl: filterConfig.baseUrl,
+                        v: data.v[0]
+                    });
+                    if (data.compare[0] == 'true') {
+                        url += '&data=data.SectionScoreConsumer/all.json';
+                    }
+                    for (var i in data.email) {
+                        var email = data.email[i];
+                        url += '&data=data.SectionScoreConsumer/{email}.json'.replaceInFormat({
+                            email: email,
+                        });
+                    }
+                    return url;
+                }
+    };
+    filterConfig.filter['class-report'] = {
+        title: '课程综合报告',
+        view: 'none',
+        required: [],
+        optional: [],
         parseUrl: function(data) {
-            if (!studentInfo.is_staff) {
-                data.email = [studentInfo.email];
-                data.compare = ['true'];
-                data.v = ['polar'];
-            }
-            var url = '{baseUrl}?v={v}'.replaceInFormat({
-                baseUrl: filterConfig.baseUrl,
-                v: data.v[0]
-            });
-            if (data.compare[0] == 'true') {
-                url += '&data=data.SectionScoreConsumer/all.json';
-            }
-            for (var i in data.email) {
-                var email = data.email[i];
-                url += '&data=data.SectionScoreConsumer/{email}.json'.replaceInFormat({
-                    email: email,
-                });
-            }
-            return url;
+            return filterConfig.claReportUrl;
         }
+    };
+    filterConfig.filter['student-report'] = {
+        title: '学生综合报告',
+        view: 'self',
+        required: [
+            ['email', '学生的注册邮箱'],
+        ],
+        optional: [],
+        parseUrl: function(data) {
+                if (!studentInfo.is_staff) {
+                    data.email = [studentInfo.email];
+                }
+
+                var url = '{baseUrl}?email={email}'.replaceInFormat({
+                    baseUrl: filterConfig.stuReportUrl,
+                    email: data.email[0]
+                });
+                return url;
+            }
     };
     filterConfig.filter['piazza-action'] = {
         title: 'piazza平台情况',
@@ -100,16 +132,16 @@ function ChartsBrowswerXBlock(runtime, element) {
             ['v', '展现方式', ['column'].concat(filterConfig.Visualization['CountStat'])],
         ],
         parseUrl: function(data) {
-            var datapath = 'data.PiazzaActionCsm/{type}.json'.replaceInFormat({
-                type: data.type[0],
-            });
-            var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
-                baseUrl: filterConfig.baseUrl,
-                datapath: datapath,
-                v: data.v[0]
-            });
-            return url;
-        }
+                var datapath = 'data.PiazzaActionCsm/{type}.json'.replaceInFormat({
+                    type: data.type[0],
+                });
+                var url = '{baseUrl}?data={datapath}&v={v}'.replaceInFormat({
+                    baseUrl: filterConfig.baseUrl,
+                    datapath: datapath,
+                    v: data.v[0]
+                });
+                return url;
+            }
     };
 
     function getChartsInfo() {
@@ -240,7 +272,9 @@ function ChartsBrowswerXBlock(runtime, element) {
 
         // 渲染载入按钮
         $(element).find('.form-panel').append(
-            '<button class="load-charts">Load</button>'
+            '<button class="tool-btn fullscreen" style="float:right">全屏切换</button>' +
+                '<button class="tool-btn load-charts" style="float:right">载入</button>' +
+                '<div style="clear:both"></div>'
         );
 
         $(element).find('.form-panel').show(200);
@@ -260,5 +294,36 @@ function ChartsBrowswerXBlock(runtime, element) {
         var url = filter.parseUrl(data);
 
         $(element).find('iframe').attr('src', url);
+    });
+
+    $(element).on('click', '.fullscreen', function(e) {
+        var $view = $('.chartsbrowser_block');
+        if (
+            document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+        ) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        } else {
+            element = $view.get(0);
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
+        }
     });
 }

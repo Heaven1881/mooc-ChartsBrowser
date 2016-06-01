@@ -1,12 +1,17 @@
 /* CSS for ChartsBrowswerXBlock */
 
+.chartsbrowser_block {
+    width: 100%;
+    overflow:auto;
+}
+
 .chartsbrowser_block .charts-view{
     border: 0;
-    box-shadow: 0 0 5px;
-    border-radius: 5px;
+    //box-shadow: 0 0 5px;
+    //border-radius: 5px;
     margin-top: 10px;
     width: 100%;
-    height: 450px;
+    height: 1000px;
 }
 
 .chartsbrowser_block .nav {
@@ -15,10 +20,9 @@
 
 .chartsbrowser_block .form-panel {
     display: none;
-    background-color: #eee;
-    border-radius: 10px;
+    background-color: #f3f3f3;
     padding: 10px;
-    margin: 10px 0px
+    margin-top: 10px;
 }
 
 .chartsbrowser_block .required-input-group {
@@ -45,27 +49,32 @@
 }
 
 .chartsbrowser_block .load-charts {
-    margin-top: 10px;
-    background-image: none;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    display: inline-block;
-    padding: 3px 16px;
-    margin-bottom: 0;
-    font-size: 14px;
-    text-align: center;
-    cursor: pointer;
-    margin-left: 110px;
-    color: #fff;
-    background-color: #5bc0de;
-    border-color: #46b8da;
+    //margin-top: 10px;
+    //background-image: none;
+    //border: 1px solid transparent;
+    //border-radius: 4px;
+    //display: inline-block;
+    //padding: 3px 16px;
+    //margin-bottom: 0;
+    //font-size: 14px;
+    //text-align: center;
+    //cursor: pointer;
+    //margin-left: 110px;
+    //color: #fff;
+    //background-color: #5bc0de;
+    //border-color: #46b8da;
 }
 
 .chartsbrowser_block .load-charts:hover {
-    color: #fff;
-    background-color: #31b0d5;
-    border-color: #269abc;
+    //color: #fff;
+    //background-color: #31b0d5;
+    //border-color: #269abc;
 }
+
+.chartsbrowser_block .tool-btn {
+    margin-left: 15px;
+}
+
 .chartsbrowser_block .input {
     width: 300px;
     height: 25px;
