@@ -10,9 +10,9 @@ function ChartsBrowswerXBlock(runtime, element) {
     // 这里是配置信息
     var studentInfo = {};
     var filterConfig = {};
-    filterConfig.baseUrl = 'http://139.129.32.184:9009/view/index.html';
-    filterConfig.stuReportUrl = 'http://139.129.32.184:9009/view/report-template/student-status-report.html'
-    filterConfig.claReportUrl = 'http://139.129.32.184:9009/view/report-template/class-status-report.html'
+    filterConfig.baseUrl = 'http://crl.ptopenlab.com:8811/static/lams/view/index.html';
+    filterConfig.stuReportUrl = 'http://crl.ptopenlab.com:8811/static/lams/view/report-template/student-status-report.html'
+    filterConfig.claReportUrl = 'http://crl.ptopenlab.com:8811/static/lams/view/report-template/class-status-report.html'
     filterConfig.enable = [
         'student-answer',
         'student-exer-grade',
@@ -71,7 +71,7 @@ function ChartsBrowswerXBlock(runtime, element) {
         ],
         optional: [
                 ['compare', '是否和平均成绩比较', ['false', 'true']],
-                ['v', '展现方式', filterConfig.Visualization['CountStat']],
+                ['v', '展现方式', ['polar'].concat(filterConfig.Visualization['CountStat'])],
             ],
             parseUrl: function(data) {
                     if (!studentInfo.is_staff) {
